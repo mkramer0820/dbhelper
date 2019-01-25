@@ -2,4 +2,4 @@
 csv2json.py
 /trace
 /trace/**
-*json
+*.json
