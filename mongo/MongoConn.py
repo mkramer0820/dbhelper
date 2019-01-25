@@ -1,7 +1,23 @@
 from pymongo import MongoClient
 import datetime
 import dateutil.parser
+import glob
 
+import yaml
+import os
+
+directory = os.path.realpath(os.path.join(os.path.dirname(__file__), "settings.yaml"))
+
+
+data_loaded = yaml.load(open(directory))
+
+directory = os.path.abspath(os.path.join(os.path.dirname( __file__ ), 'settings.yaml'))
+matched_reports = data_loaded['paths']['matched_reports']
+blotter_reports = data_loaded['paths']['blotter_reports']
+
+
+matched_reports = glob.glob(matched_reports+"*csv")
+blotter_reports = glob.glob(blotter_reports+"*csv")
 
 class Connection(object):
 
@@ -116,9 +132,9 @@ class Connection(object):
     def BulkBlotterInsert(self, blotter=True):
 
         if blotter == True:
-            data = ReadBlotterCsvs()
+            data = ReadBlotterCsvs(blotter_reports)
         else:
-            data = ReadMatched()
+            data = ReadMatched(matched_reports)
 
         coll = self.collection
         counter = 0
@@ -174,18 +190,22 @@ class Connection(object):
             if counter == total:
                 bulk.execute()
 
+    def BackUpJsonDump(self):
+
+        data = self.FindAll()
+        print(data)
 
 
 
-def ReadBlotterCsvs():
-    import glob
-    path = glob.glob('*')
+
+def ReadBlotterCsvs(path):
+
 
 
     conn = Connection()
     cols = conn.GetColumns()
     cols = cols[1:]
-
+    print(path)
     data = BlotterReader(cols, path)
 
 
@@ -222,9 +242,8 @@ def BlotterReader(cols, *args):
     return data
 
 
-def ReadMatched():
-    import glob
-    path = glob.glob('add path')
+def ReadMatched(path):
+
 
     conn = Connection(collection='tracematched')
     cols = conn.GetColumns()
@@ -266,13 +285,29 @@ def MatchedReader(cols, *args):
                     data.append(l)
     return data
 
+mathched = Connection(collection='tracematched')
+blotter = Connection(collection='tracereports')
+
+blotter.BulkBlotterInsert(blotter=True)
+mathched.BulkBlotterInsert(blotter=False)
+
+
+
+if __name__ == "__main__":
+    pass
+
+
+
+
+
+
 
 
 #ReadCsvs()
 
 
-conn = Connection(collection='tracematched')
-conn.BulkBlotterInsert(blotter=False)
+#conn = Connection(collection='tracematched')
+#conn.BulkBlotterInsert(blotter=False)
 #conn.UpdateDate('trade_report_date')
 #conn.UpdateDate('execution_date', 'execution_time')
 #conn.WhiteSpaceToNull()
